@@ -1,53 +1,57 @@
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 public class EnkelTraad extends Thread {
 
-	private Ord peker;
+	private OrdListe ordliste;
 	private String [] sortert;
 	private int start, slutt, teller, teller2 = 0;
 	private String minsteOrd, sammenlign = "";
-    private boolean sjekkRun = false;
-	private TraadMonitor mon;
-
-	public EnkelTraad (Ord peker, int start, int slutt, TraadMonitor mon) throws Exception {
+	CountDownLatch minBarriere;
+	TraadMonitor monitor;
+	
+	
+	public EnkelTraad (OrdListe ordliste, int start, int slutt, TraadMonitor monitor) throws Exception {
 		this.slutt = slutt;
-		this.peker = peker;
+		this.ordliste = ordliste;
 		this.start = start;
-		this.mon = mon;
+		this.monitor = monitor;
+	
 	}
+	 
 	public void run() {
-        //sjekkRun = true;
-		sortert = new String[slutt-start];
-		for (int i = 0; i < slutt-start; i++) {
-            if (!peker.hentOrdIndeks(i).equals("")) {
-                sammenlign = peker.hentOrdIndeks(i);
-                for (int j = 1; j < slutt-start; j++ ) {
-                    if (sorterLigningen(peker.hentOrdIndeks(j)) > 0 && !peker.hentOrdIndeks(j).equals("")) {
-                        teller2 = j;
-                        minsteOrd = peker.hentOrdIndeks(j);
-                        sammenlign = minsteOrd;
-                    }
-                }
-                peker.removeIndeks(teller2);
-                sortert[teller] = minsteOrd;
-                teller2 = 0;
-                teller++;
-            }
+		minBarriere = new CountDownLatch(2);
+		sortert = new String[slutt - start];
+		int ordTeller = 0;
+		for(int i = 0; i < slutt - start; i++){
+			for(int j = 1; j < ordliste.hentAntallOrd(); j++){
+				if(ordliste.hentListe()[j - 1].compareTo((ordliste.hentListe()[j])) > 0){
+					String temp = ordliste.hentListe()[j - 1];
+					ordliste.hentListe()[j-1] = ordliste.hentListe()[j];
+					ordliste.hentListe()[j] = temp;	
+				}
+			}
+			ordTeller++;
+			minBarriere.countDown();
+			monitor.leggTilArray(sortert, start, slutt);
+			monitor.printArray();
 		}
-        mon.sorterArray(sortert, start, slutt);
-		teller = 0;
+		System.out.println("Tester sort");
+		System.out.println("Antall ord: " + ordTeller);
+		System.out.println(Arrays.toString(ordliste.hentListe()));
+		
 	}
-	public synchronized int sorterLigningen(String anotherString) {
+	
+	public int sorterLigningen(String anotherString) {
         return sammenlign.compareTo(anotherString);
 	}
-	public synchronized void printArray(){
+	
+	public void printArray(){
 		for (int g = 0; g < sortert.length; g++){
             if (sortert[g] != null) {
                 System.out.println(sortert[g]);
             }
 		}
 	}
-    /*public boolean lagNyTraad() {
-        return sjekkRun;
-    }*/
+   
 }
